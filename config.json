@@ -1,6 +1,6 @@
 {
   "defaultHomeserver": 0,
-  "homeserverList": ["imagisphe.re", "converser.eu", "matrix.org", "mozilla.org", "unredacted.org", "xmr.se"],
+  "homeserverList": ["matrix.gemeinsam.jetzt", "imagisphe.re", "converser.eu", "matrix.org", "mozilla.org", "unredacted.org", "xmr.se"],
   "allowCustomHomeservers": true,
   "featuredCommunities": {
     "openAsDefault": false,
