@@ -86,7 +86,8 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
   );
 });
 
-function DirectHeader() {
+function DirectHeader({ isLuma }: { isLuma: boolean }) {
+  const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -100,12 +101,24 @@ function DirectHeader() {
   return (
     <>
       <PageNavHeader>
-        <Box alignItems="Center" grow="Yes" gap="300">
+        <Box alignItems="Center" grow="Yes" gap="200">
           <Box grow="Yes">
             <Text size="H4" truncate>
               Direct Messages
             </Text>
           </Box>
+          {isLuma && (
+            <Box>
+              <IconButton
+                data-testid="header-new-dm-btn"
+                aria-label="New DM"
+                variant="Background"
+                onClick={() => navigate(getDirectCreatePath())}
+              >
+                <Icon src={Icons.Plus} size="200" />
+              </IconButton>
+            </Box>
+          )}
           <Box>
             <IconButton aria-pressed={!!menuAnchor} variant="Background" onClick={handleOpenMenu}>
               <Icon src={Icons.VerticalDots} size="200" />
@@ -158,7 +171,7 @@ function DirectEmpty() {
         options={
           <Button variant="Secondary" size="300" onClick={() => navigate(getDirectCreatePath())}>
             <Text size="B300" truncate>
-              Direct Message
+              New DM
             </Text>
           </Button>
         }
@@ -176,6 +189,8 @@ export function Direct() {
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
   const navigate = useNavigate();
+  const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const isLuma = layoutMode === 'luma';
 
   const createDirectSelected = useDirectCreateSelected();
 
@@ -204,7 +219,7 @@ export function Direct() {
 
   return (
     <PageNav>
-      <DirectHeader />
+      <DirectHeader isLuma={isLuma} />
       {noRoomToDisplay ? (
         <DirectEmpty />
       ) : (
@@ -212,7 +227,7 @@ export function Direct() {
           <Box direction="Column" gap="300">
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createDirectSelected}>
-                <NavButton onClick={() => navigate(getDirectCreatePath())}>
+                <NavButton data-testid="new-dm-btn" onClick={() => navigate(getDirectCreatePath())}>
                   <NavItemContent>
                     <Box as="span" grow="Yes" alignItems="Center" gap="200">
                       <Avatar size="200" radii="400">
@@ -220,7 +235,7 @@ export function Direct() {
                       </Avatar>
                       <Box as="span" grow="Yes">
                         <Text as="span" size="Inherit" truncate>
-                          Create Chat
+                          {isLuma ? 'New DM' : 'Create Chat'}
                         </Text>
                       </Box>
                     </Box>

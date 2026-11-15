@@ -18,12 +18,15 @@ import {
   SearchTab,
 } from './sidebar';
 import { CreateTab } from './sidebar/CreateTab';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 
 export function SidebarNav() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
 
   return (
-    <Sidebar>
+    <Sidebar data-layout-mode={layoutMode}>
       <SidebarContent
         scrollable={
           <Scroll ref={scrollRef} variant="Background" size="0">

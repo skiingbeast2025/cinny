@@ -92,7 +92,7 @@ export function DirectTab() {
     });
   };
   return (
-    <SidebarItem active={directSelected}>
+    <SidebarItem active={directSelected} data-testid="sidebar-direct-tab">
       <SidebarItemTooltip tooltip="Direct Messages">
         {(triggerRef) => (
           <SidebarAvatar

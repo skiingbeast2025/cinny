@@ -2,6 +2,7 @@ import React, { MouseEventHandler, forwardRef, useMemo, useRef, useState } from 
 import { useNavigate } from 'react-router-dom';
 import {
   Avatar,
+  Badge,
   Box,
   Button,
   Icon,
@@ -37,7 +38,7 @@ import {
   getHomeSearchPath,
   withSearchParam,
 } from '../../pathUtils';
-import { getCanonicalAliasOrRoomId } from '../../../utils/matrix';
+import { getCanonicalAliasOrRoomId, getCanonicalAliasRoomId } from '../../../utils/matrix';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
 import {
   useHomeCreateSelected,
@@ -65,6 +66,7 @@ import {
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { JoinAddressPrompt } from '../../../components/join-address-prompt';
 import { _RoomSearchParams } from '../../paths';
+import { useClientConfig } from '../../../hooks/useClientConfig';
 
 type HomeMenuProps = {
   requestClose: () => void;
@@ -100,7 +102,7 @@ const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ requestClose }, re
   );
 });
 
-function HomeHeader() {
+function HomeHeader({ isLuma }: { isLuma: boolean }) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -117,7 +119,7 @@ function HomeHeader() {
         <Box alignItems="Center" grow="Yes" gap="300">
           <Box grow="Yes">
             <Text size="H4" truncate>
-              Home
+              {isLuma ? 'Global & Rooms' : 'Home'}
             </Text>
           </Box>
           <Box>
@@ -202,15 +204,39 @@ export function Home() {
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
   const navigate = useNavigate();
+  const { lunamix } = useClientConfig();
+  const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const isLuma = layoutMode === 'luma';
+  const globalAlias = lunamix?.globalRoomAlias;
 
   const selectedRoomId = useSelectedRoom();
   const createRoomSelected = useHomeCreateSelected();
   const searchSelected = useHomeSearchSelected();
-  const noRoomToDisplay = rooms.length === 0;
   const [closedCategories, setClosedCategories] = useAtom(useClosedNavCategoriesAtom());
 
+  const globalRoom = useMemo(() => {
+    if (!isLuma || !globalAlias) return undefined;
+    const canonicalRoomId = getCanonicalAliasRoomId(mx, globalAlias);
+    const matched = canonicalRoomId
+      ? mx.getRoom(canonicalRoomId)
+      : mx
+          .getRooms()
+          .find(
+            (r) =>
+              (r.getCanonicalAlias() === globalAlias ||
+                r.getAltAliases().includes(globalAlias)) &&
+              r.getMyMembership() === 'join'
+          );
+    if (!matched || matched.getMyMembership() !== 'join') return undefined;
+    return matched;
+  }, [isLuma, globalAlias, mx, rooms]);
+
+  const noRoomToDisplay = rooms.length === 0 && !(isLuma && globalAlias);
+
   const sortedRooms = useMemo(() => {
-    const items = Array.from(rooms).sort(
+    const baseRooms =
+      isLuma && globalRoom ? rooms.filter((rId) => rId !== globalRoom.roomId) : rooms;
+    const items = Array.from(baseRooms).sort(
       closedCategories.has(DEFAULT_CATEGORY_ID)
         ? factoryRoomIdByActivity(mx)
         : factoryRoomIdByAtoZ(mx)
@@ -219,7 +245,7 @@ export function Home() {
       return items.filter((rId) => roomToUnread.has(rId) || rId === selectedRoomId);
     }
     return items;
-  }, [mx, rooms, closedCategories, roomToUnread, selectedRoomId]);
+  }, [mx, rooms, isLuma, globalRoom, closedCategories, roomToUnread, selectedRoomId]);
 
   const virtualizer = useVirtualizer({
     count: sortedRooms.length,
@@ -234,12 +260,55 @@ export function Home() {
 
   return (
     <PageNav>
-      <HomeHeader />
+      <HomeHeader isLuma={isLuma} />
       {noRoomToDisplay ? (
         <HomeEmpty />
       ) : (
         <PageNavContent scrollRef={scrollRef}>
           <Box direction="Column" gap="300">
+            {isLuma && globalAlias && (
+              <NavCategory data-testid="pinned-global-chat">
+                <NavCategoryHeader>
+                  <Box alignItems="Center" gap="200" style={{ padding: `0 ${config.space.S200}` }}>
+                    <Icon size="100" src={Icons.Pin} />
+                    <Text size="O400" priority="300">
+                      Global Chat
+                    </Text>
+                    <Badge variant="Primary" fill="Soft" radii="Pill" size="200">
+                      <Text size="T200">Global</Text>
+                    </Badge>
+                  </Box>
+                </NavCategoryHeader>
+                {globalRoom ? (
+                  <RoomNavItem
+                    room={globalRoom}
+                    selected={selectedRoomId === globalRoom.roomId}
+                    linkPath={getHomeRoomPath(getCanonicalAliasOrRoomId(mx, globalRoom.roomId))}
+                    notificationMode={getRoomNotificationMode(
+                      notificationPreferences,
+                      globalRoom.roomId
+                    )}
+                  />
+                ) : (
+                  <NavItem variant="Background" radii="400">
+                    <NavButton onClick={() => navigate(getHomeRoomPath(globalAlias))}>
+                      <NavItemContent>
+                        <Box as="span" grow="Yes" alignItems="Center" gap="200">
+                          <Avatar size="200" radii="400">
+                            <Icon src={Icons.Hash} size="100" />
+                          </Avatar>
+                          <Box as="span" grow="Yes">
+                            <Text as="span" size="Inherit" truncate>
+                              Join Global Chat
+                            </Text>
+                          </Box>
+                        </Box>
+                      </NavItemContent>
+                    </NavButton>
+                  </NavItem>
+                )}
+              </NavCategory>
+            )}
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createRoomSelected}>
                 <NavButton onClick={() => navigate(getHomeCreatePath())}>

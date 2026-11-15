@@ -9,7 +9,7 @@ import { mDirectAtom } from '../../../state/mDirectList';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
-import { getHomePath, joinPathComponent } from '../../pathUtils';
+import { getHomePath, getHomeRoomPath, joinPathComponent } from '../../pathUtils';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import {
   SidebarAvatar,
@@ -26,6 +26,8 @@ import { markAsRead } from '../../../utils/notifications';
 import { stopPropagation } from '../../../utils/keyboard';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useClientConfig } from '../../../hooks/useClientConfig';
+import { getCanonicalAliasRoomId } from '../../../utils/matrix';
 
 type HomeMenuProps = {
   requestClose: () => void;
@@ -66,6 +68,10 @@ export function HomeTab() {
   const mx = useMatrixClient();
   const screenSize = useScreenSizeContext();
   const navToActivePath = useAtomValue(useNavToActivePathAtom());
+  const { lunamix } = useClientConfig();
+  const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const isLuma = layoutMode === 'luma';
+  const globalAlias = lunamix?.globalRoomAlias;
 
   const mDirects = useAtomValue(mDirectAtom);
   const roomToParents = useAtomValue(roomToParentsAtom);
@@ -75,6 +81,26 @@ export function HomeTab() {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleHomeClick = () => {
+    if (isLuma && globalAlias) {
+      const canonicalRoomId = getCanonicalAliasRoomId(mx, globalAlias);
+      const matchedRoom = canonicalRoomId
+        ? mx.getRoom(canonicalRoomId)
+        : mx
+            .getRooms()
+            .find(
+              (r) =>
+                (r.getCanonicalAlias() === globalAlias ||
+                  r.getAltAliases().includes(globalAlias)) &&
+                r.getMyMembership() === 'join'
+            );
+      const targetIdOrAlias =
+        matchedRoom && matchedRoom.getMyMembership() === 'join'
+          ? matchedRoom.getCanonicalAlias() || matchedRoom.roomId
+          : globalAlias;
+      navigate(getHomeRoomPath(targetIdOrAlias));
+      return;
+    }
+
     const activePath = navToActivePath.get('home');
     if (activePath && screenSize !== ScreenSize.Mobile) {
       navigate(joinPathComponent(activePath));
@@ -94,8 +120,11 @@ export function HomeTab() {
   };
 
   return (
-    <SidebarItem active={homeSelected}>
-      <SidebarItemTooltip tooltip="Home">
+    <SidebarItem
+      active={homeSelected}
+      data-testid={isLuma ? 'sidebar-global-chat-tab' : 'sidebar-home-tab'}
+    >
+      <SidebarItemTooltip tooltip={isLuma ? 'Global Chat' : 'Home'}>
         {(triggerRef) => (
           <SidebarAvatar
             as="button"
@@ -104,7 +133,7 @@ export function HomeTab() {
             onClick={handleHomeClick}
             onContextMenu={handleContextMenu}
           >
-            <Icon src={Icons.Home} filled={homeSelected} />
+            <Icon src={isLuma ? Icons.Hash : Icons.Home} filled={homeSelected} />
           </SidebarAvatar>
         )}
       </SidebarItemTooltip>
