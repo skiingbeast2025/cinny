@@ -2,6 +2,12 @@
   "defaultHomeserver": 0,
   "homeserverList": ["matrix.gemeinsam.jetzt", "imagisphe.re", "converser.eu", "matrix.org", "mozilla.org", "unredacted.org", "xmr.se"],
   "allowCustomHomeservers": true,
+  "lunamix": {
+    "brandName": "Lunamix Chat",
+    "globalRoomAlias": "#lunamix-global:gemeinsam.jetzt",
+    "autoJoinGlobal": true,
+    "compactSpacesAsGroups": true
+  },
   "featuredCommunities": {
     "openAsDefault": false,
     "spaces": [
