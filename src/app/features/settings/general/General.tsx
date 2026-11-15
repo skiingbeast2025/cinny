@@ -304,6 +304,7 @@ function PageZoomInput() {
 }
 
 function Appearance() {
+  const [layoutMode, setLayoutMode] = useSetting(settingsAtom, 'layoutMode');
   const [systemTheme, setSystemTheme] = useSetting(settingsAtom, 'useSystemTheme');
   const [monochromeMode, setMonochromeMode] = useSetting(settingsAtom, 'monochromeMode');
   const [twitterEmoji, setTwitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
@@ -311,6 +312,21 @@ function Appearance() {
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Appearance</Text>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Luma Chat Layout (Global Chat + DMs + Group Chats)"
+          description="Pin Global Chat and Direct Messages at the top with compact Group Chats."
+          after={
+            <Switch
+              data-testid="luma-layout-toggle"
+              variant="Primary"
+              value={layoutMode === 'luma'}
+              onChange={(checked) => setLayoutMode(checked ? 'luma' : 'classic')}
+            />
+          }
+        />
+      </SequenceCard>
+
       <SequenceCard
         className={SequenceCardStyle}
         variant="SurfaceVariant"
