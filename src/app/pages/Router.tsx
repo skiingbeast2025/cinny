@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
+  Navigate,
   Outlet,
   Route,
   createBrowserRouter,
@@ -7,8 +8,14 @@ import {
   createRoutesFromElements,
   redirect,
 } from 'react-router-dom';
+import { useAtomValue } from 'jotai';
 
-import { ClientConfig } from '../hooks/useClientConfig';
+import { ClientConfig, useClientConfig } from '../hooks/useClientConfig';
+import { useMatrixClient } from '../hooks/useMatrixClient';
+import { useSetting } from '../state/hooks/settings';
+import { settingsAtom } from '../state/settings';
+import { allRoomsAtom } from '../state/room-list/roomList';
+import { getCanonicalAliasRoomId } from '../utils/matrix';
 import { AuthLayout, Login, Register, ResetPassword } from './auth';
 import {
   DIRECT_PATH,
@@ -34,6 +41,7 @@ import {
   getAppPathFromHref,
   getExploreFeaturedPath,
   getHomePath,
+  getHomeRoomPath,
   getInboxNotificationsPath,
   getLoginPath,
   getOriginBaseUrl,
@@ -70,6 +78,43 @@ import { SearchModalRenderer } from '../features/search';
 import { getFallbackSession } from '../state/sessions';
 import { CallStatusRenderer } from './CallStatusRenderer';
 import { CallEmbedProvider } from '../components/CallEmbedProvider';
+
+function HomeIndexPage() {
+  const { lunamix } = useClientConfig();
+  const mx = useMatrixClient();
+  const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const allRooms = useAtomValue(allRoomsAtom);
+
+  const globalAlias = lunamix?.globalRoomAlias;
+
+  const globalRoomPath = useMemo(() => {
+    if (layoutMode !== 'luma' || !globalAlias) return undefined;
+
+    const canonicalRoomId = getCanonicalAliasRoomId(mx, globalAlias);
+    const matchedRoom = canonicalRoomId
+      ? mx.getRoom(canonicalRoomId)
+      : mx
+          .getRooms()
+          .find(
+            (r) =>
+              (r.getCanonicalAlias() === globalAlias ||
+                r.getAltAliases().includes(globalAlias)) &&
+              r.getMyMembership() === 'join'
+          );
+
+    if (!matchedRoom || matchedRoom.getMyMembership() !== 'join') return undefined;
+    if (!allRooms.includes(matchedRoom.roomId)) return undefined;
+
+    const targetIdOrAlias = matchedRoom.getCanonicalAlias() || matchedRoom.roomId;
+    return getHomeRoomPath(targetIdOrAlias);
+  }, [layoutMode, globalAlias, mx, allRooms]);
+
+  if (globalRoomPath) {
+    return <Navigate to={globalRoomPath} replace />;
+  }
+
+  return <WelcomePage />;
+}
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -168,7 +213,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             </PageRoot>
           }
         >
-          {mobile ? null : <Route index element={<WelcomePage />} />}
+          {mobile ? null : <Route index element={<HomeIndexPage />} />}
           <Route path={_CREATE_PATH} element={<HomeCreateRoom />} />
           <Route path={_JOIN_PATH} element={<p>join</p>} />
           <Route path={_SEARCH_PATH} element={<HomeSearch />} />
