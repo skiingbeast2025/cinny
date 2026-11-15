@@ -15,7 +15,7 @@ import {
 } from 'folds';
 import { HttpApiEvent, HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
-import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useState } from 'react';
+import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   clearCacheAndReload,
   clearLoginData,
@@ -36,6 +36,7 @@ import { SyncStatus } from './SyncStatus';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
 import { AutoDiscovery } from './AutoDiscovery';
+import { useClientConfig } from '../../hooks/useClientConfig';
 
 function ClientRootLoading() {
   return (
@@ -144,6 +145,8 @@ type ClientRootProps = {
 };
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
+  const { lunamix } = useClientConfig();
+  const autoJoinAttemptedRef = useRef(false);
   const { baseUrl, userId } = getFallbackSession() ?? {};
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
@@ -176,11 +179,39 @@ export function ClientRoot({ children }: ClientRootProps) {
 
   useSyncState(
     mx,
-    useCallback((state) => {
-      if (state === 'PREPARED') {
-        setLoading(false);
-      }
-    }, [])
+    useCallback(
+      (state) => {
+        if (state === 'PREPARED') {
+          setLoading(false);
+
+          if (
+            lunamix?.autoJoinGlobal &&
+            lunamix?.globalRoomAlias &&
+            mx &&
+            !autoJoinAttemptedRef.current
+          ) {
+            autoJoinAttemptedRef.current = true;
+            const targetAlias = lunamix.globalRoomAlias;
+            const alreadyJoined = mx.getRooms().some(
+              (r) =>
+                (r.getCanonicalAlias() === targetAlias ||
+                  r.getAltAliases().includes(targetAlias)) &&
+                r.getMyMembership() === 'join'
+            );
+            if (!alreadyJoined) {
+              (async () => {
+                try {
+                  await mx.joinRoom(targetAlias);
+                } catch {
+                  // Ignore if the global room does not exist yet or cannot be joined
+                }
+              })();
+            }
+          }
+        }
+      },
+      [mx, lunamix?.autoJoinGlobal, lunamix?.globalRoomAlias]
+    )
   );
 
   return (
