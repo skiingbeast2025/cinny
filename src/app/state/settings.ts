@@ -14,6 +14,7 @@ export enum MessageLayout {
   Compact = 1,
   Bubble = 2,
 }
+export type LayoutMode = 'luma' | 'classic';
 
 export interface Settings {
   themeId?: string;
@@ -21,6 +22,7 @@ export interface Settings {
   lightThemeId?: string;
   darkThemeId?: string;
   monochromeMode?: boolean;
+  layoutMode: LayoutMode;
   isMarkdown: boolean;
   editorToolbar: boolean;
   twitterEmoji: boolean;
@@ -55,6 +57,7 @@ const defaultSettings: Settings = {
   lightThemeId: undefined,
   darkThemeId: undefined,
   monochromeMode: false,
+  layoutMode: 'luma',
   isMarkdown: true,
   editorToolbar: false,
   twitterEmoji: false,
