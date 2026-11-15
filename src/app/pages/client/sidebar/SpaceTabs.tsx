@@ -93,6 +93,7 @@ import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../../components/invite-user-prompt';
+import { useClientConfig } from '../../../hooks/useClientConfig';
 
 type SpaceMenuProps = {
   room: Room;
@@ -387,6 +388,7 @@ type SpaceTabProps = {
   selected: boolean;
   onClick: MouseEventHandler<HTMLButtonElement>;
   folder?: ISidebarFolder;
+  compact?: boolean;
   onDragging: (dragItem?: SidebarDraggable) => void;
   disabled?: boolean;
   onUnpin?: (roomId: string) => void;
@@ -396,6 +398,7 @@ function SpaceTab({
   selected,
   onClick,
   folder,
+  compact,
   onDragging,
   disabled,
   onUnpin,
@@ -430,6 +433,9 @@ function SpaceTab({
     });
   };
 
+  const isCompact = Boolean(folder || compact);
+  const tooltipText = compact ? `Group Chat: ${space.name}` : space.name;
+
   return (
     <RoomUnreadProvider roomId={space.roomId}>
       {(unread) => (
@@ -442,13 +448,13 @@ function SpaceTab({
           data-drop-below={dropType === 'reorder-below'}
           data-inside-folder={!!folder}
         >
-          <SidebarItemTooltip tooltip={disabled ? undefined : space.name}>
+          <SidebarItemTooltip tooltip={disabled ? undefined : tooltipText}>
             {(triggerRef) => (
               <SidebarAvatar
                 as="button"
                 data-id={space.roomId}
                 ref={triggerRef}
-                size={folder ? '300' : '400'}
+                size={isCompact ? '300' : '400'}
                 onClick={onClick}
                 onContextMenu={handleContextMenu}
               >
@@ -457,7 +463,7 @@ function SpaceTab({
                   src={getRoomAvatarUrl(mx, space, 96, useAuthentication) ?? undefined}
                   alt={space.name}
                   renderFallback={() => (
-                    <Text size={folder ? 'H6' : 'H4'}>{nameInitials(space.name, 2)}</Text>
+                    <Text size={isCompact ? 'H6' : 'H4'}>{nameInitials(space.name, 2)}</Text>
                   )}
                 />
               </SidebarAvatar>
@@ -618,6 +624,10 @@ export function SpaceTabs({ scrollRef }: SpaceTabsProps) {
   const navToActivePath = useAtomValue(useNavToActivePathAtom());
   const [openedFolder, setOpenedFolder] = useAtom(useOpenedSidebarFolderAtom());
   const [draggingItem, setDraggingItem] = useState<SidebarDraggable>();
+  const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const { lunamix } = useClientConfig();
+  const compactGroups = layoutMode === 'luma' && lunamix?.compactSpacesAsGroups !== false;
+  const [groupsExpanded, setGroupsExpanded] = useState(true);
 
   useDnDMonitor(
     scrollRef,
@@ -801,65 +811,107 @@ export function SpaceTabs({ scrollRef }: SpaceTabsProps) {
   return (
     <>
       <SidebarStackSeparator />
-      <SidebarStack>
-        {sidebarItems.map((item) => {
-          if (typeof item === 'object') {
-            if (openedFolder.has(item.id)) {
+      <SidebarStack
+        data-testid={compactGroups ? 'sidebar-group-chats' : undefined}
+        style={compactGroups ? { gap: config.space.S200 } : undefined}
+      >
+        {compactGroups && (
+          <>
+            <SidebarItem data-testid="sidebar-group-chats-toggle">
+              <SidebarItemTooltip tooltip="Group Chats">
+                {(triggerRef) => (
+                  <SidebarAvatar
+                    as="button"
+                    ref={triggerRef}
+                    size="300"
+                    outlined
+                    aria-expanded={groupsExpanded}
+                    aria-label="Group Chats"
+                    onClick={() => setGroupsExpanded((prev) => !prev)}
+                  >
+                    <Icon
+                      size="100"
+                      src={groupsExpanded ? Icons.ChevronBottom : Icons.ChevronRight}
+                    />
+                  </SidebarAvatar>
+                )}
+              </SidebarItemTooltip>
+            </SidebarItem>
+            <Text
+              size="T200"
+              priority="300"
+              style={{
+                fontSize: toRem(10),
+                lineHeight: 1.1,
+                textAlign: 'center',
+                userSelect: 'none',
+              }}
+            >
+              Groups
+            </Text>
+          </>
+        )}
+        {(!compactGroups || groupsExpanded) &&
+          sidebarItems.map((item) => {
+            if (typeof item === 'object') {
+              if (openedFolder.has(item.id)) {
+                return (
+                  <OpenedSpaceFolder key={item.id} folder={item} onClose={handleFolderToggle}>
+                    {item.content.map((sId) => {
+                      const space = mx.getRoom(sId);
+                      if (!space) return null;
+                      return (
+                        <SpaceTab
+                          key={space.roomId}
+                          space={space}
+                          selected={space.roomId === selectedSpaceId}
+                          onClick={handleSpaceClick}
+                          folder={item}
+                          compact={compactGroups}
+                          onDragging={setDraggingItem}
+                          disabled={
+                            typeof draggingItem === 'object'
+                              ? draggingItem.spaceId === space.roomId
+                              : false
+                          }
+                          onUnpin={orphanSpaces.includes(space.roomId) ? undefined : handleUnpin}
+                        />
+                      );
+                    })}
+                  </OpenedSpaceFolder>
+                );
+              }
+
               return (
-                <OpenedSpaceFolder key={item.id} folder={item} onClose={handleFolderToggle}>
-                  {item.content.map((sId) => {
-                    const space = mx.getRoom(sId);
-                    if (!space) return null;
-                    return (
-                      <SpaceTab
-                        key={space.roomId}
-                        space={space}
-                        selected={space.roomId === selectedSpaceId}
-                        onClick={handleSpaceClick}
-                        folder={item}
-                        onDragging={setDraggingItem}
-                        disabled={
-                          typeof draggingItem === 'object'
-                            ? draggingItem.spaceId === space.roomId
-                            : false
-                        }
-                        onUnpin={orphanSpaces.includes(space.roomId) ? undefined : handleUnpin}
-                      />
-                    );
-                  })}
-                </OpenedSpaceFolder>
+                <ClosedSpaceFolder
+                  key={item.id}
+                  folder={item}
+                  selected={!!selectedSpaceId && item.content.includes(selectedSpaceId)}
+                  onOpen={handleFolderToggle}
+                  onDragging={setDraggingItem}
+                  disabled={
+                    typeof draggingItem === 'object' ? draggingItem.folder.id === item.id : false
+                  }
+                />
               );
             }
 
+            const space = mx.getRoom(item);
+            if (!space) return null;
+
             return (
-              <ClosedSpaceFolder
-                key={item.id}
-                folder={item}
-                selected={!!selectedSpaceId && item.content.includes(selectedSpaceId)}
-                onOpen={handleFolderToggle}
+              <SpaceTab
+                key={space.roomId}
+                space={space}
+                selected={space.roomId === selectedSpaceId}
+                onClick={handleSpaceClick}
+                compact={compactGroups}
                 onDragging={setDraggingItem}
-                disabled={
-                  typeof draggingItem === 'object' ? draggingItem.folder.id === item.id : false
-                }
+                disabled={typeof draggingItem === 'string' ? draggingItem === space.roomId : false}
+                onUnpin={orphanSpaces.includes(space.roomId) ? undefined : handleUnpin}
               />
             );
-          }
-
-          const space = mx.getRoom(item);
-          if (!space) return null;
-
-          return (
-            <SpaceTab
-              key={space.roomId}
-              space={space}
-              selected={space.roomId === selectedSpaceId}
-              onClick={handleSpaceClick}
-              onDragging={setDraggingItem}
-              disabled={typeof draggingItem === 'string' ? draggingItem === space.roomId : false}
-              onUnpin={orphanSpaces.includes(space.roomId) ? undefined : handleUnpin}
-            />
-          );
-        })}
+          })}
       </SidebarStack>
     </>
   );
