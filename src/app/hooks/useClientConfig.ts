@@ -5,10 +5,19 @@ export type HashRouterConfig = {
   basename?: string;
 };
 
+export type LunamixConfig = {
+  brandName?: string;
+  globalRoomAlias?: string;
+  autoJoinGlobal?: boolean;
+  compactSpacesAsGroups?: boolean;
+};
+
 export type ClientConfig = {
   defaultHomeserver?: number;
   homeserverList?: string[];
   allowCustomHomeservers?: boolean;
+
+  lunamix?: LunamixConfig;
 
   featuredCommunities?: {
     openAsDefault?: boolean;
