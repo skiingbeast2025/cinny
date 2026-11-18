@@ -8,8 +8,9 @@ import { IgnoredUserList } from './IgnoredUserList';
 
 type AccountProps = {
   requestClose: () => void;
+  onOpenNameplates?: () => void;
 };
-export function Account({ requestClose }: AccountProps) {
+export function Account({ requestClose, onOpenNameplates }: AccountProps) {
   return (
     <Page>
       <PageHeader outlined={false}>
@@ -30,7 +31,7 @@ export function Account({ requestClose }: AccountProps) {
         <Scroll hideTrack visibility="Hover">
           <PageContent>
             <Box direction="Column" gap="700">
-              <Profile />
+              <Profile onOpenNameplates={onOpenNameplates} />
               <MatrixId />
               <ContactInformation />
               <IgnoredUserList />

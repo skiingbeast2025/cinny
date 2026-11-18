@@ -83,6 +83,7 @@ import {
   isMembershipChanged,
   reactionOrEditEvent,
 } from '../../utils/room';
+import { isPureNameplateMemberChange } from '../../utils/nameplate';
 import { useSetting } from '../../state/hooks/settings';
 import { MessageLayout, settingsAtom } from '../../state/settings';
 import { useMatrixEventRenderer } from '../../hooks/useMatrixEventRenderer';
@@ -1298,6 +1299,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       [StateEvent.RoomMember]: (mEventId, mEvent, item) => {
         const membershipChanged = isMembershipChanged(mEvent);
         if (membershipChanged && hideMembershipEvents) return null;
+        if (
+          isPureNameplateMemberChange(
+            mEvent.getPrevContent() as Record<string, unknown>,
+            mEvent.getContent() as Record<string, unknown>
+          )
+        ) {
+          return null;
+        }
         if (!membershipChanged && hideNickAvatarEvents) return null;
 
         const highlighted = focusItem?.index === item && focusItem.highlight;

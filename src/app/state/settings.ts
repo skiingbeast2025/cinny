@@ -23,6 +23,7 @@ export interface Settings {
   darkThemeId?: string;
   monochromeMode?: boolean;
   layoutMode: LayoutMode;
+  showNameplates: boolean;
   isMarkdown: boolean;
   editorToolbar: boolean;
   twitterEmoji: boolean;
@@ -58,6 +59,7 @@ const defaultSettings: Settings = {
   darkThemeId: undefined,
   monochromeMode: false,
   layoutMode: 'luma',
+  showNameplates: true,
   isMarkdown: true,
   editorToolbar: false,
   twitterEmoji: false,

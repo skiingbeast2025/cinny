@@ -21,6 +21,10 @@ import { UserPresence } from '../../hooks/useUserPresence';
 import { AvatarPresence, PresenceBadge } from '../presence';
 import { ImageViewer } from '../image-viewer';
 import { stopPropagation } from '../../utils/keyboard';
+import { Nameplate } from '../nameplate';
+import { NameplateConfig } from '../../utils/nameplate';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 
 type UserHeroProps = {
   userId: string;
@@ -95,20 +99,29 @@ export function UserHero({ userId, avatarUrl, presence }: UserHeroProps) {
 type UserHeroNameProps = {
   displayName?: string;
   userId: string;
+  nameplate?: NameplateConfig;
 };
-export function UserHeroName({ displayName, userId }: UserHeroNameProps) {
+export function UserHeroName({ displayName, userId, nameplate }: UserHeroNameProps) {
   const username = getMxIdLocalPart(userId);
+  const [showNameplates] = useSetting(settingsAtom, 'showNameplates');
 
   return (
-    <Box grow="Yes" direction="Column" gap="0">
+    <Box grow="Yes" direction="Column" gap="100">
       <Box alignItems="Baseline" gap="200" wrap="Wrap">
-        <Text
-          size="H4"
-          className={classNames(BreakWord, LineClamp3)}
-          title={displayName ?? username}
+        <Nameplate
+          variant="pill"
+          nameplate={nameplate}
+          disabled={!showNameplates}
+          data-testid="profile-nameplate"
         >
-          {displayName ?? username ?? userId}
-        </Text>
+          <Text
+            size="H4"
+            className={classNames(BreakWord, LineClamp3)}
+            title={displayName ?? username}
+          >
+            {displayName ?? username ?? userId}
+          </Text>
+        </Nameplate>
       </Box>
       <Box alignItems="Center" gap="100" wrap="Wrap">
         <Text size="T200" className={classNames(BreakWord, LineClamp3)} title={username}>

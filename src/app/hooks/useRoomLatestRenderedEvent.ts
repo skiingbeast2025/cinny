@@ -5,6 +5,7 @@ import { settingsAtom } from '../state/settings';
 import { useSetting } from '../state/hooks/settings';
 import { MessageEvent, StateEvent } from '../../types/matrix/room';
 import { isMembershipChanged, reactionOrEditEvent } from '../utils/room';
+import { isPureNameplateMemberChange } from '../utils/nameplate';
 
 export const useRoomLatestRenderedEvent = (room: Room) => {
   const [hideMembershipEvents] = useSetting(settingsAtom, 'hideMembershipEvents');
@@ -23,6 +24,14 @@ export const useRoomLatestRenderedEvent = (room: Room) => {
         if (evt.getType() === StateEvent.RoomMember) {
           const membershipChanged = isMembershipChanged(evt);
           if (membershipChanged && hideMembershipEvents) continue;
+          if (
+            isPureNameplateMemberChange(
+              evt.getPrevContent() as Record<string, unknown>,
+              evt.getContent() as Record<string, unknown>
+            )
+          ) {
+            continue;
+          }
           if (!membershipChanged && hideNickAvatarEvents) continue;
           return evt;
         }

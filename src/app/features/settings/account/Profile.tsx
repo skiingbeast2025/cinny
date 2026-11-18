@@ -43,6 +43,9 @@ import { ModalWide } from '../../../styles/Modal.css';
 import { createUploadAtom, UploadSuccess } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useCapabilities } from '../../../hooks/useCapabilities';
+import { Nameplate } from '../../../components/nameplate';
+import { useOwnNameplate } from '../../../hooks/useNameplate';
+import { isNameplateActive } from '../../../utils/nameplate';
 
 type ProfileProps = {
   profile: UserProfile;
@@ -303,10 +306,16 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
   );
 }
 
-export function Profile() {
+type ProfileComponentProps = {
+  onOpenNameplates?: () => void;
+};
+
+export function Profile({ onOpenNameplates }: ProfileComponentProps) {
   const mx = useMatrixClient();
   const userId = mx.getUserId()!;
   const profile = useUserProfile(userId);
+  const { nameplate } = useOwnNameplate();
+  const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
 
   return (
     <Box direction="Column" gap="100">
@@ -319,6 +328,37 @@ export function Profile() {
       >
         <ProfileAvatar userId={userId} profile={profile} />
         <ProfileDisplayName userId={userId} profile={profile} />
+        <SettingTile
+          title={
+            <Text as="span" size="L400">
+              Name Plate
+            </Text>
+          }
+          description="Customize your chat name plate color, finish, or image for free."
+          after={
+            onOpenNameplates && (
+              <Button
+                size="300"
+                variant="Primary"
+                fill="Soft"
+                outlined
+                radii="300"
+                onClick={onOpenNameplates}
+                data-testid="account-customize-nameplate-btn"
+              >
+                <Text size="B300">Customize Name Plate</Text>
+              </Button>
+            )
+          }
+        >
+          <Box alignItems="Center" gap="200">
+            <Nameplate variant="pill" nameplate={nameplate}>
+              <Text as="span" size="T300" style={{ fontWeight: 600 }}>
+                {isNameplateActive(nameplate) ? displayName : `${displayName} (Classic)`}
+              </Text>
+            </Nameplate>
+          </Box>
+        </SettingTile>
       </SequenceCard>
     </Box>
   );

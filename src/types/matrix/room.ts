@@ -14,6 +14,7 @@ export type IMemberContent = {
   membership?: Membership;
   reason?: string;
   is_direct?: boolean;
+  'org.lunamix.nameplate'?: unknown;
 };
 
 export enum StateEvent {

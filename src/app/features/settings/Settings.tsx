@@ -30,12 +30,14 @@ import { Devices } from './devices';
 import { EmojisStickers } from './emojis-stickers';
 import { DeveloperTools } from './developer-tools';
 import { About } from './about';
+import { Nameplates } from './nameplates';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { stopPropagation } from '../../utils/keyboard';
 import { LogoutDialog } from '../../components/LogoutDialog';
 
 export enum SettingsPages {
   GeneralPage,
+  NameplatesPage,
   AccountPage,
   NotificationPage,
   DevicesPage,
@@ -57,6 +59,11 @@ const useSettingsMenuItems = (): SettingsMenuItem[] =>
         page: SettingsPages.GeneralPage,
         name: 'General',
         icon: Icons.Setting,
+      },
+      {
+        page: SettingsPages.NameplatesPage,
+        name: 'Name Plates',
+        icon: Icons.Star,
       },
       {
         page: SettingsPages.AccountPage,
@@ -108,7 +115,7 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
 
   const screenSize = useScreenSizeContext();
   const [activePage, setActivePage] = useState<SettingsPages | undefined>(() => {
-    if (initialPage) return initialPage;
+    if (initialPage !== undefined) return initialPage;
     return screenSize === ScreenSize.Mobile ? undefined : SettingsPages.GeneralPage;
   });
   const menuItems = useSettingsMenuItems();
@@ -213,8 +220,14 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
       {activePage === SettingsPages.GeneralPage && (
         <General requestClose={handlePageRequestClose} />
       )}
+      {activePage === SettingsPages.NameplatesPage && (
+        <Nameplates requestClose={handlePageRequestClose} />
+      )}
       {activePage === SettingsPages.AccountPage && (
-        <Account requestClose={handlePageRequestClose} />
+        <Account
+          requestClose={handlePageRequestClose}
+          onOpenNameplates={() => setActivePage(SettingsPages.NameplatesPage)}
+        />
       )}
       {activePage === SettingsPages.NotificationPage && (
         <Notifications requestClose={handlePageRequestClose} />

@@ -305,6 +305,7 @@ function PageZoomInput() {
 
 function Appearance() {
   const [layoutMode, setLayoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const [showNameplates, setShowNameplates] = useSetting(settingsAtom, 'showNameplates');
   const [systemTheme, setSystemTheme] = useSetting(settingsAtom, 'useSystemTheme');
   const [monochromeMode, setMonochromeMode] = useSetting(settingsAtom, 'monochromeMode');
   const [twitterEmoji, setTwitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
@@ -322,6 +323,18 @@ function Appearance() {
               variant="Primary"
               value={layoutMode === 'luma'}
               onChange={(checked) => setLayoutMode(checked ? 'luma' : 'classic')}
+            />
+          }
+        />
+        <SettingTile
+          title="Show Name Plates"
+          description="Display custom colored and uploaded image name plates across messages and member lists."
+          after={
+            <Switch
+              data-testid="show-nameplates-toggle"
+              variant="Primary"
+              value={showNameplates}
+              onChange={setShowNameplates}
             />
           }
         />

@@ -59,6 +59,12 @@ import { useSpaceOptionally } from '../../hooks/useSpace';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
+import { useRoomMemberNameplate } from '../../hooks/useNameplate';
+import {
+  getNameplateInlineStyle,
+  isNameplateActive,
+  resolveNameplateImageUrl,
+} from '../../utils/nameplate';
 
 type MemberDrawerHeaderProps = {
   room: Room;
@@ -125,12 +131,33 @@ function MemberItem({
   const avatarUrl = avatarMxcUrl
     ? mx.mxcUrlToHttp(avatarMxcUrl, 100, 100, 'crop', undefined, false, useAuthentication)
     : undefined;
+  const [showNameplates] = useSetting(settingsAtom, 'showNameplates');
+  const memberNameplate = useRoomMemberNameplate(room, member.userId);
+  const activePlate = showNameplates && isNameplateActive(memberNameplate);
+  const plateImageUrl = activePlate
+    ? resolveNameplateImageUrl(mx, memberNameplate, useAuthentication, 480, 120)
+    : undefined;
+  const plateStyle = activePlate
+    ? getNameplateInlineStyle(memberNameplate, plateImageUrl)
+    : undefined;
 
   return (
     <MenuItem
-      style={{ padding: `0 ${config.space.S200}` }}
+      style={{
+        padding: `0 ${config.space.S200}`,
+        ...(plateStyle
+          ? {
+              ...plateStyle,
+              borderRadius: config.radii.R400,
+              border: '1px solid rgb(255 255 255 / 0.22)',
+              boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.14)',
+            }
+          : {}),
+      }}
       aria-pressed={pressed}
       data-user-id={member.userId}
+      data-testid={activePlate ? 'member-nameplate' : undefined}
+      data-nameplate-mode={activePlate ? memberNameplate?.mode : undefined}
       variant="Background"
       radii="400"
       onClick={onClick}
@@ -153,7 +180,11 @@ function MemberItem({
       }
     >
       <Box grow="Yes">
-        <Text size="T400" truncate>
+        <Text
+          size="T400"
+          style={plateStyle ? { color: 'inherit', fontWeight: 600 } : undefined}
+          truncate
+        >
           {name}
         </Text>
       </Box>

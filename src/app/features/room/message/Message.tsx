@@ -58,7 +58,7 @@ import {
   isRoomAlias,
   mxcUrlToHttp,
 } from '../../../utils/matrix';
-import { MessageLayout, MessageSpacing } from '../../../state/settings';
+import { MessageLayout, MessageSpacing, settingsAtom } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import * as css from './styles.css';
@@ -78,6 +78,9 @@ import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
 import { MemberPowerTag, StateEvent } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
+import { Nameplate } from '../../../components/nameplate';
+import { useRoomMemberNameplate } from '../../../hooks/useNameplate';
+import { useSetting } from '../../../state/hooks/settings';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
@@ -739,6 +742,9 @@ export const Message = as<'div', MessageProps>(
       ? getPowerTagIconSrc(mx, useAuthentication, memberPowerTag.icon)
       : undefined;
 
+    const [showNameplates] = useSetting(settingsAtom, 'showNameplates');
+    const senderNameplate = useRoomMemberNameplate(room, senderId);
+
     const usernameColor = legacyUsernameColor ? colorMXID(senderId) : tagColor;
 
     const headerJSX = !collapse && (
@@ -757,13 +763,20 @@ export const Message = as<'div', MessageProps>(
             onContextMenu={onUserClick}
             onClick={onUsernameClick}
           >
-            <Text
-              as="span"
-              size={messageLayout === MessageLayout.Bubble ? 'T300' : 'T400'}
-              truncate
+            <Nameplate
+              variant="pill"
+              nameplate={senderNameplate}
+              disabled={!showNameplates}
+              data-testid="message-nameplate"
             >
-              <UsernameBold>{senderDisplayName}</UsernameBold>
-            </Text>
+              <Text
+                as="span"
+                size={messageLayout === MessageLayout.Bubble ? 'T300' : 'T400'}
+                truncate
+              >
+                <UsernameBold>{senderDisplayName}</UsernameBold>
+              </Text>
+            </Nameplate>
           </Username>
           {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
         </Box>

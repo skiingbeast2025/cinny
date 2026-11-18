@@ -13,11 +13,12 @@ import {
   PopOut,
   RectCords,
   Text,
+  color,
   config,
   toRem,
 } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import FocusTrap from 'focus-trap-react';
 import { factoryRoomIdByActivity, factoryRoomIdByAtoZ } from '../../../utils/sort';
 import {
@@ -38,7 +39,11 @@ import {
   getHomeSearchPath,
   withSearchParam,
 } from '../../pathUtils';
-import { getCanonicalAliasOrRoomId, getCanonicalAliasRoomId } from '../../../utils/matrix';
+import {
+  getCanonicalAliasOrRoomId,
+  getCanonicalAliasRoomId,
+  getMxIdLocalPart,
+} from '../../../utils/matrix';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
 import {
   useHomeCreateSelected,
@@ -67,6 +72,11 @@ import { UseStateProvider } from '../../../components/UseStateProvider';
 import { JoinAddressPrompt } from '../../../components/join-address-prompt';
 import { _RoomSearchParams } from '../../paths';
 import { useClientConfig } from '../../../hooks/useClientConfig';
+import { useOwnNameplate } from '../../../hooks/useNameplate';
+import { Nameplate } from '../../../components/nameplate';
+import { nameplatesModalAtom } from '../../../state/nameplatesModal';
+import { useUserProfile } from '../../../hooks/useUserProfile';
+import { isNameplateActive } from '../../../utils/nameplate';
 
 type HomeMenuProps = {
   requestClose: () => void;
@@ -206,8 +216,15 @@ export function Home() {
   const navigate = useNavigate();
   const { lunamix } = useClientConfig();
   const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
+  const [showNameplates] = useSetting(settingsAtom, 'showNameplates');
   const isLuma = layoutMode === 'luma';
   const globalAlias = lunamix?.globalRoomAlias;
+  const setNameplatesModalOpen = useSetAtom(nameplatesModalAtom);
+  const { nameplate: ownNameplate } = useOwnNameplate();
+  const myUserId = mx.getUserId() ?? '';
+  const myProfile = useUserProfile(myUserId);
+  const myDisplayName = myProfile.displayName ?? getMxIdLocalPart(myUserId) ?? myUserId;
+  const hasActivePlate = showNameplates && isNameplateActive(ownNameplate);
 
   const selectedRoomId = useSelectedRoom();
   const createRoomSelected = useHomeCreateSelected();
@@ -223,8 +240,7 @@ export function Home() {
           .getRooms()
           .find(
             (r) =>
-              (r.getCanonicalAlias() === globalAlias ||
-                r.getAltAliases().includes(globalAlias)) &&
+              (r.getCanonicalAlias() === globalAlias || r.getAltAliases().includes(globalAlias)) &&
               r.getMyMembership() === 'join'
           );
     if (!matched || matched.getMyMembership() !== 'join') return undefined;
@@ -261,6 +277,70 @@ export function Home() {
   return (
     <PageNav>
       <HomeHeader isLuma={isLuma} />
+      {isLuma && (
+        <Box style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }} shrink="No">
+          <button
+            type="button"
+            onClick={() => setNameplatesModalOpen(true)}
+            data-testid="home-nameplate-card"
+            style={{
+              width: '100%',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'block',
+            }}
+          >
+            <Nameplate
+              variant="banner"
+              nameplate={ownNameplate}
+              disabled={!showNameplates}
+              style={{ display: 'block', width: '100%' }}
+            >
+              <Box
+                alignItems="Center"
+                justifyContent="SpaceBetween"
+                gap="200"
+                style={{
+                  padding: `${config.space.S200} ${config.space.S300}`,
+                  borderRadius: hasActivePlate ? undefined : config.radii.R400,
+                  border: hasActivePlate
+                    ? undefined
+                    : `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+                  backgroundColor: hasActivePlate ? undefined : color.Surface.Container,
+                }}
+              >
+                <Box alignItems="Center" gap="200" style={{ minWidth: 0 }}>
+                  <Icon size="100" src={Icons.Star} filled />
+                  <Box direction="Column" style={{ minWidth: 0 }}>
+                    <Text
+                      size="T300"
+                      data-nameplate-text={hasActivePlate ? 'true' : undefined}
+                      style={{ fontWeight: 600 }}
+                      truncate
+                    >
+                      {myDisplayName}
+                    </Text>
+                    <Text
+                      size="T200"
+                      data-nameplate-text={hasActivePlate ? 'true' : undefined}
+                      priority={hasActivePlate ? undefined : '300'}
+                      truncate
+                    >
+                      Your Name Plate
+                    </Text>
+                  </Box>
+                </Box>
+                <Badge variant="Secondary" fill="Soft" radii="Pill" size="300">
+                  <Text size="T200">Edit</Text>
+                </Badge>
+              </Box>
+            </Nameplate>
+          </button>
+        </Box>
+      )}
       {noRoomToDisplay ? (
         <HomeEmpty />
       ) : (

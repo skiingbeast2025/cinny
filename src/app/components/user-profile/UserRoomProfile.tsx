@@ -1,5 +1,6 @@
 import { Box, Button, config, Icon, Icons, Text } from 'folds';
 import React from 'react';
+import { useSetAtom } from 'jotai';
 import { useNavigate } from 'react-router-dom';
 import { UserHero, UserHeroName } from './UserHero';
 import { getMxIdServer, mxcUrlToHttp } from '../../utils/matrix';
@@ -22,6 +23,8 @@ import { useMemberPowerCompare } from '../../hooks/useMemberPowerCompare';
 import { CreatorChip } from './CreatorChip';
 import { getDirectCreatePath, withSearchParam } from '../../pages/pathUtils';
 import { DirectCreateSearchParams } from '../../pages/paths';
+import { nameplatesModalAtom } from '../../state/nameplatesModal';
+import { useRoomMemberNameplate } from '../../hooks/useNameplate';
 
 type UserRoomProfileProps = {
   userId: string;
@@ -42,6 +45,8 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
   const { hasMorePower } = useMemberPowerCompare(creators, powerLevels);
 
   const myUserId = mx.getSafeUserId();
+  const setNameplatesModalOpen = useSetAtom(nameplatesModalAtom);
+  const memberNameplate = useRoomMemberNameplate(room, userId);
   const creator = creators.has(userId);
 
   const canKickUser = permissions.action('kick', myUserId) && hasMorePower(myUserId, userId);
@@ -77,8 +82,8 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
       <Box direction="Column" gap="500" style={{ padding: config.space.S400 }}>
         <Box direction="Column" gap="400">
           <Box gap="400" alignItems="Start">
-            <UserHeroName displayName={displayName} userId={userId} />
-            {userId !== myUserId && (
+            <UserHeroName displayName={displayName} userId={userId} nameplate={memberNameplate} />
+            {userId !== myUserId ? (
               <Box shrink="No">
                 <Button
                   size="300"
@@ -89,6 +94,24 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
                   onClick={handleMessage}
                 >
                   <Text size="B300">Message</Text>
+                </Button>
+              </Box>
+            ) : (
+              <Box shrink="No">
+                <Button
+                  size="300"
+                  variant="Secondary"
+                  fill="Soft"
+                  outlined
+                  radii="300"
+                  before={<Icon size="50" src={Icons.Star} filled />}
+                  onClick={() => {
+                    closeUserRoomProfile();
+                    setNameplatesModalOpen(true);
+                  }}
+                  data-testid="profile-customize-nameplate-btn"
+                >
+                  <Text size="B300">Customize Name Plate</Text>
                 </Button>
               </Box>
             )}
