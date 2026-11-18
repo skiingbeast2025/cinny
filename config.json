@@ -1,10 +1,10 @@
 {
   "defaultHomeserver": 0,
   "homeserverList": [
-    "m.ip-t.com",
-    "matrix.phcn.de",
     "matrix.privex.io",
+    "matrix.phcn.de",
     "im.skytel.ee",
+    "m.ip-t.com",
     "matrix.gemeinsam.jetzt",
     "imagisphe.re",
     "matrix.org"
