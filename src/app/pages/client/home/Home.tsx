@@ -43,6 +43,7 @@ import {
   getCanonicalAliasOrRoomId,
   getCanonicalAliasRoomId,
   getMxIdLocalPart,
+  getMxIdServer,
 } from '../../../utils/matrix';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
 import {
@@ -71,7 +72,8 @@ import {
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { JoinAddressPrompt } from '../../../components/join-address-prompt';
 import { _RoomSearchParams } from '../../paths';
-import { useClientConfig } from '../../../hooks/useClientConfig';
+import { clientDefaultServer, useClientConfig } from '../../../hooks/useClientConfig';
+import { switchHomeserverSession } from '../../../../client/initMatrix';
 import { useOwnNameplate } from '../../../hooks/useNameplate';
 import { Nameplate } from '../../../components/nameplate';
 import { nameplatesModalAtom } from '../../../state/nameplatesModal';
@@ -214,7 +216,9 @@ export function Home() {
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
   const navigate = useNavigate();
-  const { lunamix } = useClientConfig();
+  const clientConfig = useClientConfig();
+  const { lunamix } = clientConfig;
+  const defaultServer = clientDefaultServer(clientConfig);
   const [layoutMode] = useSetting(settingsAtom, 'layoutMode');
   const [showNameplates] = useSetting(settingsAtom, 'showNameplates');
   const isLuma = layoutMode === 'luma';
@@ -222,9 +226,19 @@ export function Home() {
   const setNameplatesModalOpen = useSetAtom(nameplatesModalAtom);
   const { nameplate: ownNameplate } = useOwnNameplate();
   const myUserId = mx.getUserId() ?? '';
+  const myServer = getMxIdServer(myUserId);
   const myProfile = useUserProfile(myUserId);
   const myDisplayName = myProfile.displayName ?? getMxIdLocalPart(myUserId) ?? myUserId;
   const hasActivePlate = showNameplates && isNameplateActive(ownNameplate);
+  const showSwitchServer = Boolean(
+    isLuma &&
+      myServer &&
+      myServer.includes('gemeinsam') &&
+      defaultServer &&
+      defaultServer !== myServer
+  );
+  const [switchingServer, setSwitchingServer] = useState(false);
+  const [hideServerBanner, setHideServerBanner] = useState(false);
 
   const selectedRoomId = useSelectedRoom();
   const createRoomSelected = useHomeCreateSelected();
@@ -339,6 +353,57 @@ export function Home() {
               </Box>
             </Nameplate>
           </button>
+        </Box>
+      )}
+      {showSwitchServer && !hideServerBanner && (
+        <Box
+          style={{
+            padding: '0 10px 8px',
+          }}
+        >
+          <Box
+            direction="Column"
+            gap="200"
+            style={{
+              padding: '10px 12px',
+              borderRadius: config.radii.R400,
+              backgroundColor: color.Surface.Container,
+              border: `1px solid ${color.Warning.ContainerLine}`,
+            }}
+          >
+            <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
+              <Text size="T200" priority="400" truncate>
+                Signed in on {myServer}
+              </Text>
+              <IconButton
+                size="300"
+                variant="Surface"
+                fill="None"
+                radii="300"
+                aria-label="Dismiss homeserver switch prompt"
+                onClick={() => setHideServerBanner(true)}
+              >
+                <Icon src={Icons.Cross} size="100" />
+              </IconButton>
+            </Box>
+            <Button
+              size="300"
+              variant="Primary"
+              fill="Soft"
+              radii="300"
+              data-testid="home-switch-homeserver-btn"
+              disabled={switchingServer}
+              onClick={() => {
+                if (switchingServer) return;
+                setSwitchingServer(true);
+                switchHomeserverSession(mx, defaultServer);
+              }}
+            >
+              <Text size="T200" truncate>
+                {switchingServer ? 'Switching...' : `Switch to ${defaultServer}`}
+              </Text>
+            </Button>
+          </Box>
         </Box>
       )}
       {noRoomToDisplay ? (

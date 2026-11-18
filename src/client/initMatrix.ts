@@ -53,7 +53,7 @@ export const clearCacheAndReload = async (mx: MatrixClient) => {
   window.location.reload();
 };
 
-export const logoutClient = async (mx: MatrixClient) => {
+export const logoutClient = async (mx: MatrixClient, nextHash?: string) => {
   pushSessionToSW();
   mx.stopClient();
   try {
@@ -63,8 +63,14 @@ export const logoutClient = async (mx: MatrixClient) => {
   }
   await mx.clearStores();
   window.localStorage.clear();
+  if (nextHash) {
+    window.location.hash = nextHash;
+  }
   window.location.reload();
 };
+
+export const switchHomeserverSession = async (mx: MatrixClient, targetServer: string) =>
+  logoutClient(mx, `#/register/${encodeURIComponent(targetServer)}`);
 
 export const clearLoginData = async () => {
   const dbs = await window.indexedDB.databases();
