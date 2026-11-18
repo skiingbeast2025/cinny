@@ -1,9 +1,9 @@
 {
   "defaultHomeserver": 0,
   "homeserverList": [
+    "matrix.phcn.de",
     "matrix.horse",
     "matrix.privex.io",
-    "matrix.phcn.de",
     "im.skytel.ee",
     "m.ip-t.com",
     "matrix.gemeinsam.jetzt",
