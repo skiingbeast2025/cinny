@@ -1,6 +1,7 @@
 {
   "defaultHomeserver": 0,
   "homeserverList": [
+    "matrix.horse",
     "matrix.privex.io",
     "matrix.phcn.de",
     "im.skytel.ee",
