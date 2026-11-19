@@ -1,6 +1,7 @@
 {
   "defaultHomeserver": 0,
   "homeserverList": [
+    "vn-rtmessaging.rtcenter.org",
     "matrix.phcn.de",
     "matrix.horse",
     "matrix.privex.io",
