@@ -14,7 +14,7 @@
   "allowCustomHomeservers": true,
   "lunamix": {
     "brandName": "Lunamix Chat",
-    "globalRoomAlias": "#lunamix-global:gemeinsam.jetzt",
+    "globalRoomAlias": "#lunamix-global:vn-rtmessaging.rtcenter.org",
     "autoJoinGlobal": true,
     "compactSpacesAsGroups": true
   },
